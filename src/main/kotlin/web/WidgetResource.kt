@@ -1,19 +1,25 @@
 package web
 
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.websocket.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.call
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.delete
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.put
+import io.ktor.server.routing.route
+import io.ktor.server.websocket.sendSerialized
+import io.ktor.server.websocket.webSocket
+import io.ktor.websocket.Frame
+import io.ktor.websocket.FrameType
+import io.ktor.websocket.readText
 import model.NewWidget
 import service.WidgetService
 
 fun Route.widget(widgetService: WidgetService) {
-
     route("/widgets") {
-
         get {
             call.respond(widgetService.getAllWidgets())
         }
@@ -21,8 +27,33 @@ fun Route.widget(widgetService: WidgetService) {
         get("/{id}") {
             val id = call.parameters["id"]?.toInt() ?: throw IllegalStateException("Must provide id")
             val widget = widgetService.getWidget(id)
-            if (widget == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(widget)
+            if (widget == null) {
+                call.respond(HttpStatusCode.NotFound)
+            } else {
+                call.respond(widget)
+            }
+        }
+
+        get("/all") {
+            val allWidgets = widgetService.getAllWidgets()
+            val widgets = widgetService.getFastAllWidgets(allWidgets.map { it.id })
+
+            if (widgets.isEmpty()) {
+                call.respond(HttpStatusCode.NotFound)
+            } else {
+                call.respond(widgets)
+            }
+        }
+
+        get("/all/simple") {
+            val allWidgets = widgetService.getAllWidgets()
+            val widgets = widgetService.getNonFastAllWidgets(allWidgets.map { it.id })
+
+            if (widgets.isEmpty()) {
+                call.respond(HttpStatusCode.NotFound)
+            } else {
+                call.respond(widgets)
+            }
         }
 
         post {
@@ -33,17 +64,22 @@ fun Route.widget(widgetService: WidgetService) {
         put {
             val widget = call.receive<NewWidget>()
             val updated = widgetService.updateWidget(widget)
-            if (updated == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(HttpStatusCode.OK, updated)
+            if (updated == null) {
+                call.respond(HttpStatusCode.NotFound)
+            } else {
+                call.respond(HttpStatusCode.OK, updated)
+            }
         }
 
         delete("/{id}") {
             val id = call.parameters["id"]?.toInt() ?: throw IllegalStateException("Must provide id")
             val removed = widgetService.deleteWidget(id)
-            if (removed) call.respond(HttpStatusCode.OK)
-            else call.respond(HttpStatusCode.NotFound)
+            if (removed) {
+                call.respond(HttpStatusCode.OK)
+            } else {
+                call.respond(HttpStatusCode.NotFound)
+            }
         }
-
     }
 
     webSocket("/updates") {

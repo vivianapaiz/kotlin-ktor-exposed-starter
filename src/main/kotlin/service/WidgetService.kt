@@ -1,13 +1,29 @@
 package service
 
-import model.*
-import org.jetbrains.exposed.sql.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import model.ChangeType
+import model.NewWidget
+import model.Notification
+import model.Widget
+import model.WidgetNotification
+import model.Widgets
+import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.update
+import org.slf4j.LoggerFactory
 import service.DatabaseFactory.dbExec
 
 class WidgetService {
 
     private val listeners = mutableMapOf<Int, suspend (WidgetNotification) -> Unit>()
+    private val logger = LoggerFactory.getLogger("WidgetServices")
 
     fun addChangeListener(id: Int, listener: suspend (WidgetNotification) -> Unit) {
         listeners[id] = listener
@@ -53,11 +69,13 @@ class WidgetService {
     suspend fun addWidget(widget: NewWidget): Widget {
         var key = 0
         dbExec {
-            key = (Widgets.insert {
-                it[name] = widget.name
-                it[quantity] = widget.quantity
-                it[dateUpdated] = System.currentTimeMillis()
-            } get Widgets.id)
+            key = (
+                Widgets.insert {
+                    it[name] = widget.name
+                    it[quantity] = widget.quantity
+                    it[dateUpdated] = System.currentTimeMillis()
+                } get Widgets.id
+                )
         }
         return getWidget(key)!!.also {
             onChange(ChangeType.CREATE, key, it)
@@ -77,6 +95,25 @@ class WidgetService {
             id = row[Widgets.id],
             name = row[Widgets.name],
             quantity = row[Widgets.quantity],
-            dateUpdated = row[Widgets.dateUpdated]
+            dateUpdated = row[Widgets.dateUpdated],
         )
+
+    suspend fun getFastAllWidgets(ids: List<Int>): List<Widget> = withContext(Dispatchers.IO) {
+        val widgets = mutableListOf<Widget>()
+        ids.forEach { id ->
+            launch {
+                getWidget(id)?.let(widgets::add)
+            }
+        }
+        widgets
+    }
+
+    suspend fun getNonFastAllWidgets(ids: List<Int>): List<Widget> {
+        val widgets = mutableListOf<Widget>()
+        ids.forEach { id ->
+            getWidget(id)?.let(widgets::add)
+            logger.info("Finish to get widget id $id")
+        }
+        return widgets
+    }
 }

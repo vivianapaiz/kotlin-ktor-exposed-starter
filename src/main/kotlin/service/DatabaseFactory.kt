@@ -9,6 +9,7 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import javax.sql.DataSource
+import kotlinx.coroutines.delay
 
 object DatabaseFactory {
 
@@ -46,9 +47,10 @@ object DatabaseFactory {
     }
 
     suspend fun <T> dbExec(
-        block: () -> T
+        block: () -> T,
     ): T = withContext(Dispatchers.IO) {
+        delay(1000L)
+        log.info(" is running on thread ${Thread.currentThread().name}")
         transaction { block() }
     }
-
 }

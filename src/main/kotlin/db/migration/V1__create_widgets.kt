@@ -22,6 +22,41 @@ class V1__create_widgets: BaseJavaMigration() {
                 it[quantity] = 14
                 it[dateUpdated] = System.currentTimeMillis()
             }
+            Widgets.insert {
+                it[name] = "widget tres"
+                it[quantity] = 12
+                it[dateUpdated] = System.currentTimeMillis()
+            }
+            Widgets.insert {
+                it[name] = "widget cuatro"
+                it[quantity] = 12
+                it[dateUpdated] = System.currentTimeMillis()
+            }
+            Widgets.insert {
+                it[name] = "widget cinco"
+                it[quantity] = 12
+                it[dateUpdated] = System.currentTimeMillis()
+            }
+            Widgets.insert {
+                it[name] = "widget seis"
+                it[quantity] = 12
+                it[dateUpdated] = System.currentTimeMillis()
+            }
+            Widgets.insert {
+                it[name] = "widget siete"
+                it[quantity] = 12
+                it[dateUpdated] = System.currentTimeMillis()
+            }
+            Widgets.insert {
+                it[name] = "widget ocho"
+                it[quantity] = 12
+                it[dateUpdated] = System.currentTimeMillis()
+            }
+            Widgets.insert {
+                it[name] = "widget nueve"
+                it[quantity] = 0
+                it[dateUpdated] = System.currentTimeMillis()
+            }
         }
     }
 }
